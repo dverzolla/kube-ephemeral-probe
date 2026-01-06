@@ -1,0 +1,76 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ${JOB_NAME}
+  labels:
+    app: kube-ephemeral-probe
+spec:
+  ttlSecondsAfterFinished: 60
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: kube-ephemeral-probe
+    spec:
+      restartPolicy: Never
+      nodeName: ${NODE_NAME}
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: kube-ephemeral-probe
+          image: public.ecr.aws/docker/library/alpine:3.19
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              echo "${SCAN_SCRIPT_B64}" | base64 -d | sh
+          env:
+            - name: NODE_NAME
+              value: "${NODE_NAME}"
+            - name: SCAN_TYPE
+              value: "${SCAN_TYPE}"
+            - name: SKIP_PATTERN
+              value: "${SKIP_PATTERN}"
+          securityContext:
+            privileged: true
+            runAsUser: 0
+            allowPrivilegeEscalation: true
+            readOnlyRootFilesystem: false
+          volumeMounts:
+            - name: containerd-tasks
+              mountPath: /host/run/containerd/io.containerd.runtime.v2.task/k8s.io
+              readOnly: true
+            - name: containerd-var-lib
+              mountPath: /host/var/lib/containerd
+              readOnly: true
+            - name: var-log-pods
+              mountPath: /host/var/log/pods
+              readOnly: true
+            - name: kubelet-pods
+              mountPath: /host/var/lib/kubelet/pods
+              readOnly: true
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+      volumes:
+        - name: containerd-tasks
+          hostPath:
+            path: /run/containerd/io.containerd.runtime.v2.task/k8s.io
+            type: Directory
+        - name: containerd-var-lib
+          hostPath:
+            path: /var/lib/containerd
+            type: Directory
+        - name: var-log-pods
+          hostPath:
+            path: /var/log/pods
+            type: Directory
+        - name: kubelet-pods
+          hostPath:
+            path: /var/lib/kubelet/pods
+            type: Directory
