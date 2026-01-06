@@ -85,7 +85,7 @@ Container writable layers contain files created/modified inside containers:
 1. Mounts host paths for containerd tasks, pod logs, and kubelet pod volumes
 2. Iterates over directories and extracts Kubernetes identity (namespace, pod, container)
 3. Executes `du -sb` to measure actual disk usage
-4. Outputs results sorted by size (top 50 per scan type)
+4. Outputs results sorted by size
 
 ## Why `du` instead of metrics?
 
